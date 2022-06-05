@@ -70,6 +70,24 @@ def Find_Price_And_Date(date_int, StockPrice):
 
     return output
 
+def Real_Legal_Info (EnglishSymbol, date_int):
+    
+    path = 'C:\\Users\\Hessum\\OneDrive\\Bourse\\Raw Data\\%s.txt' %date_int
+    ff=open(path, 'r')
+    lines = ff.readlines()
+    RL = None
+
+    for i in range(1, len(lines)):
+        line = lines[i]
+        line = line.strip()     
+        values = line.split(', ')
+
+        if values[0] == EnglishSymbol:
+            RL = [int(j) for j in values[1:]]
+    
+    return RL
+
+
 # The first date which we have candle data about it is 1380/01/05
 # The first date which we have Real-Legal data about it is 1393/01/05
 JalaliDate_Start = jdatetime.date(1393, 1, 5)                                   # Jalali Start Date
@@ -116,6 +134,14 @@ for CompanyName in CompaniesName:
         
         Stock_Date_Info.extend(NotAdj_Price[:-1])                           # add not adjusted open high low close prices to the list
         Stock_Date_Info.extend(Adj_Price)                                   # add adjusted open high low close prices and total volume to the list
+        
+        Real_Legal_Volume_Number = Real_Legal_Info (EnglishSymbol, JalaliDate_int)  # Real Legal Number Volume and Closing Price
+        Stock_Date_Info.extend(Real_Legal_Volume_Number)                            # Closing price in Tehran Stocks is something average of dealed price of each day
+        
+        format_strings = ','.join(['%s'] * len(Stock_Date_Info))
+        cursor.execute('INSERT INTO raw_data VALUES (%s)' % format_strings, tuple(Stock_Date_Info))
+        cnx.commit()
+
         print(Stock_Date_Info)
 
         JalaliDate += OneDayDelta
