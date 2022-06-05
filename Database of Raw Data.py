@@ -58,11 +58,22 @@ def RLinfo (DateShamsi):
     
     return RL
 
+def Date_obj2int(date):
+    return 10000*date.year + 100*date.month + date.day
+
+def Find_Price_And_Date(date_int, StockPrice):
+    output = None
+
+    for line in StockPrice:
+        if line[0] == date_int:
+            output = line[1:]               # output = [open, high, low, close, volume]
+
+    return output
 
 # The first date which we have candle data about it is 1380/01/05
 # The first date which we have Real-Legal data about it is 1393/01/05
 JalaliDate_Start = jdatetime.date(1393, 1, 5)                                   # Jalali Start Date
-JalaliDate_Stop = jdatetime.date(1401, 3, 6)                                    # Jalali Stop Date
+JalaliDate_Stop = jdatetime.date(1393, 1, 7)                                    # Jalali Stop Date
 
 GregorianDate_start = jdatetime.date.togregorian(JalaliDate_Start)              # Convert Start Date to Gregorian 
 GregorianDate_stop = jdatetime.date.togregorian(JalaliDate_Stop)                # Convert Start Date to Gregorian Stop Date
@@ -83,6 +94,31 @@ for CompanyName in CompaniesName:
     EnglishSymbol = CompanyName[0]
     Adj_Price_Data = Symbol_Candle_Read_Adj (EnglishSymbol)                 # Adjusted price data = [date, open, high, low, close, volume]
     NotAdj_Price_Data = Symbol_Candle_Read_NotAdj (EnglishSymbol)           # Not Adjusted data = [date, open, high, low, close, volume]
+    JalaliDate = JalaliDate_Start
 
+    while JalaliDate <= JalaliDate_Stop:
+        Stock_Date_Info = []
+
+        GregorianDate = jdatetime.date.togregorian(JalaliDate)              # convert Jalali date to Gregorian
+        Stock_Date_Info.append(EnglishSymbol)                               # add English symbol of stock to the list
+        Stock_Date_Info.append(GregorianDate)                               # add Gregorian Date to the list
+        Stock_Date_Info.append(JalaliDate)                                  # add Jalali Date to the list
+        
+        JalaliDate_int = Date_obj2int(JalaliDate)                           # convert Jalali date as an object to an integer
+        GregorianDate_int = Date_obj2int(GregorianDate)                     # convert Gregorian date as an object to an integer
+
+        Adj_Price = Find_Price_And_Date(GregorianDate_int, Adj_Price_Data)          # adjusted price data of a specific date
+        NotAdj_Price = Find_Price_And_Date(GregorianDate_int, NotAdj_Price_Data)    # not adjusted price data of a specific date
+
+        if Adj_Price == None or NotAdj_Price == None:                       # if there isn't any data of that date skip it 
+            JalaliDate += OneDayDelta
+            continue
+        
+        Stock_Date_Info.extend(NotAdj_Price[:-1])                           # add not adjusted open high low close prices to the list
+        Stock_Date_Info.extend(Adj_Price)                                   # add adjusted open high low close prices and total volume to the list
+        print(Stock_Date_Info)
+
+        JalaliDate += OneDayDelta
 
 cnx.close()
+
