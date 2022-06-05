@@ -101,8 +101,8 @@ for CompanyName in CompaniesName:
 
         GregorianDate = jdatetime.date.togregorian(JalaliDate)              # convert Jalali date to Gregorian
         Stock_Date_Info.append(EnglishSymbol)                               # add English symbol of stock to the list
-        Stock_Date_Info.append(GregorianDate)                               # add Gregorian Date to the list
-        Stock_Date_Info.append(JalaliDate)                                  # add Jalali Date to the list
+        Stock_Date_Info.append(GregorianDate.isoformat())                   # add Gregorian Date to the list
+        Stock_Date_Info.append(JalaliDate.isoformat())                      # add Jalali Date to the list
         
         JalaliDate_int = Date_obj2int(JalaliDate)                           # convert Jalali date as an object to an integer
         GregorianDate_int = Date_obj2int(GregorianDate)                     # convert Gregorian date as an object to an integer
