@@ -87,11 +87,21 @@ def Real_Legal_Info (EnglishSymbol, date_int):
     
     return RL
 
+def Start_Date_Finder(Stock):
+    
+    Start_Date = JalaliDate_Start
+    cursor.execute('SELECT max(Jalali_Date) FROM raw_data WHERE EnglishSymbol = \'%s\';' %Stock)
+    result = cursor.fetchall()
+    
+    if result[0][0] != None:
+        Start_Date = result[0][0] + OneDayDelta
+
+    return Start_Date
 
 # The first date which we have candle data about it is 1380/01/05
 # The first date which we have Real-Legal data about it is 1393/01/05
 JalaliDate_Start = jdatetime.date(1393, 1, 5)                                   # Jalali Start Date
-JalaliDate_Stop = jdatetime.date(1393, 1, 7)                                    # Jalali Stop Date
+JalaliDate_Stop = jdatetime.date(1395, 1, 7)                                    # Jalali Stop Date
 
 GregorianDate_start = jdatetime.date.togregorian(JalaliDate_Start)              # Convert Start Date to Gregorian 
 GregorianDate_stop = jdatetime.date.togregorian(JalaliDate_Stop)                # Convert Start Date to Gregorian Stop Date
@@ -112,7 +122,8 @@ for CompanyName in CompaniesName:
     EnglishSymbol = CompanyName[0]
     Adj_Price_Data = Symbol_Candle_Read_Adj (EnglishSymbol)                 # Adjusted price data = [date, open, high, low, close, volume]
     NotAdj_Price_Data = Symbol_Candle_Read_NotAdj (EnglishSymbol)           # Not Adjusted data = [date, open, high, low, close, volume]
-    JalaliDate = JalaliDate_Start
+    JalaliDate = Start_Date_Finder(EnglishSymbol)
+    print(EnglishSymbol)
 
     while JalaliDate <= JalaliDate_Stop:
         Stock_Date_Info = []
@@ -142,9 +153,8 @@ for CompanyName in CompaniesName:
         cursor.execute('INSERT INTO raw_data VALUES (%s)' % format_strings, tuple(Stock_Date_Info))
         cnx.commit()
 
-        print(Stock_Date_Info)
+        #print(Stock_Date_Info)
 
         JalaliDate += OneDayDelta
 
 cnx.close()
-
