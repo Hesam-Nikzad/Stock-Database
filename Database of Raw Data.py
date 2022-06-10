@@ -1,4 +1,5 @@
 import jdatetime
+import datetime
 import mysql.connector
 
 def Symbol_Candle_Read_Adj (EnglishSymbol):
@@ -75,7 +76,7 @@ def Real_Legal_Info (EnglishSymbol, date_int):
     path = 'C:\\Users\\Hessum\\OneDrive\\Bourse\\Raw Data\\%s.txt' %date_int
     ff=open(path, 'r')
     lines = ff.readlines()
-    RL = None
+    RL = [None, None, None, None, None, None, None, None, None]
 
     for i in range(1, len(lines)):
         line = lines[i]
@@ -89,24 +90,31 @@ def Real_Legal_Info (EnglishSymbol, date_int):
 
 def Start_Date_Finder(Stock):
     
-    Start_Date = JalaliDate_Start
-    cursor.execute('SELECT max(Jalali_Date) FROM raw_data WHERE EnglishSymbol = \'%s\';' %Stock)
+    Released_Date_int = Adj_Price_Data[0][0]
+    y = Released_Date_int//10**4
+    m = (Released_Date_int%10**4)//10**2
+    d = Released_Date_int % 10**2
+    Released_Date = datetime.date(y, m, d)                      # Released date of the stock
+
+    Start_Date = max(GregorianDate_start, Released_Date)
+
+    cursor.execute('SELECT max(Gregorian_Date) FROM raw_data WHERE EnglishSymbol = \'%s\';' %Stock)
     result = cursor.fetchall()
     
     if result[0][0] != None:
-        Start_Date = result[0][0] + OneDayDelta
-
+        Start_Date = result[0][0] + OneDayDelta                 # If this stock data were inserted 
+    
     return Start_Date
 
 # The first date which we have candle data about it is 1380/01/05
 # The first date which we have Real-Legal data about it is 1393/01/05
 JalaliDate_Start = jdatetime.date(1393, 1, 5)                                   # Jalali Start Date
-JalaliDate_Stop = jdatetime.date(1395, 1, 7)                                    # Jalali Stop Date
+JalaliDate_Stop = jdatetime.date(1401, 3, 20)                                    # Jalali Stop Date
 
 GregorianDate_start = jdatetime.date.togregorian(JalaliDate_Start)              # Convert Start Date to Gregorian 
 GregorianDate_stop = jdatetime.date.togregorian(JalaliDate_Stop)                # Convert Start Date to Gregorian Stop Date
 
-OneDayDelta = jdatetime.timedelta(days=1)                                       # Make a one-day delta time
+OneDayDelta = datetime.timedelta(days=1)                                       # Make a one-day delta time
 
 cnx = mysql.connector.connect(user='root', password='harchi',
                               host='127.0.0.1',
@@ -122,25 +130,25 @@ for CompanyName in CompaniesName:
     EnglishSymbol = CompanyName[0]
     Adj_Price_Data = Symbol_Candle_Read_Adj (EnglishSymbol)                 # Adjusted price data = [date, open, high, low, close, volume]
     NotAdj_Price_Data = Symbol_Candle_Read_NotAdj (EnglishSymbol)           # Not Adjusted data = [date, open, high, low, close, volume]
-    JalaliDate = Start_Date_Finder(EnglishSymbol)
-    print(EnglishSymbol)
+    GregorianDate = Start_Date_Finder(EnglishSymbol)
+    print(EnglishSymbol, GregorianDate)
 
-    while JalaliDate <= JalaliDate_Stop:
+    while GregorianDate <= GregorianDate_stop:
+        
         Stock_Date_Info = []
 
-        GregorianDate = jdatetime.date.togregorian(JalaliDate)              # convert Jalali date to Gregorian
+        JalaliDate = jdatetime.datetime.fromgregorian(datetime=GregorianDate)            # convert Jalali date to Gregorian
         Stock_Date_Info.append(EnglishSymbol)                               # add English symbol of stock to the list
         Stock_Date_Info.append(GregorianDate.isoformat())                   # add Gregorian Date to the list
-        Stock_Date_Info.append(JalaliDate.isoformat())                      # add Jalali Date to the list
         
         JalaliDate_int = Date_obj2int(JalaliDate)                           # convert Jalali date as an object to an integer
         GregorianDate_int = Date_obj2int(GregorianDate)                     # convert Gregorian date as an object to an integer
-
+        
         Adj_Price = Find_Price_And_Date(GregorianDate_int, Adj_Price_Data)          # adjusted price data of a specific date
         NotAdj_Price = Find_Price_And_Date(GregorianDate_int, NotAdj_Price_Data)    # not adjusted price data of a specific date
 
         if Adj_Price == None or NotAdj_Price == None:                       # if there isn't any data of that date skip it 
-            JalaliDate += OneDayDelta
+            GregorianDate += OneDayDelta
             continue
         
         Stock_Date_Info.extend(NotAdj_Price[:-1])                           # add not adjusted open high low close prices to the list
@@ -153,8 +161,6 @@ for CompanyName in CompaniesName:
         cursor.execute('INSERT INTO raw_data VALUES (%s)' % format_strings, tuple(Stock_Date_Info))
         cnx.commit()
 
-        #print(Stock_Date_Info)
-
-        JalaliDate += OneDayDelta
+        GregorianDate += OneDayDelta
 
 cnx.close()
