@@ -88,7 +88,7 @@ def Real_Legal_Info (EnglishSymbol, date_int):
     
     return RL
 
-def Start_Date_Finder(Stock):
+def Start_Date_Finder(Stock, Adj_Price_Data):
     
     Released_Date_int = Adj_Price_Data[0][0]
     y = Released_Date_int//10**4
@@ -98,7 +98,7 @@ def Start_Date_Finder(Stock):
 
     Start_Date = max(GregorianDate_start, Released_Date)
 
-    cursor.execute('SELECT max(Gregorian_Date) FROM raw_data WHERE EnglishSymbol = \'%s\';' %Stock)
+    cursor.execute('SELECT max(Gregorian_Date) FROM stock_raw_data WHERE EnglishSymbol = \'%s\';' %Stock)
     result = cursor.fetchall()
     
     if result[0][0] != None:
@@ -116,7 +116,7 @@ def Stock_Data():
         EnglishSymbol = CompanyName[0]
         Adj_Price_Data = Symbol_Candle_Read_Adj (EnglishSymbol)                 # Adjusted price data = [date, open, high, low, close, volume]
         NotAdj_Price_Data = Symbol_Candle_Read_NotAdj (EnglishSymbol)           # Not Adjusted data = [date, open, high, low, close, volume]
-        GregorianDate = Start_Date_Finder(EnglishSymbol)
+        GregorianDate = Start_Date_Finder(EnglishSymbol, Adj_Price_Data)
         print(EnglishSymbol, GregorianDate)
 
         while GregorianDate <= GregorianDate_stop:
@@ -144,7 +144,7 @@ def Stock_Data():
             Stock_Date_Info.extend(Real_Legal_Volume_Number)                            # Closing price in Tehran Stocks is something average of dealed price of each day
             
             format_strings = ','.join(['%s'] * len(Stock_Date_Info))
-            cursor.execute('INSERT INTO raw_data VALUES (%s)' % format_strings, tuple(Stock_Date_Info))
+            cursor.execute('INSERT INTO stoc_raw_data VALUES (%s)' % format_strings, tuple(Stock_Date_Info))
             cnx.commit()
 
             GregorianDate += OneDayDelta
@@ -152,8 +152,10 @@ def Stock_Data():
 
 # The first date which we have candle data about it is 1380/01/05
 # The first date which we have Real-Legal data about it is 1393/01/05
-JalaliDate_Start = jdatetime.date(1401, 3, 20)                                   # Jalali Start Date
-JalaliDate_Stop = jdatetime.date(1401, 3, 27)                                    # Jalali Stop Date
+Today = jdatetime.date.today()
+JalaliDate_Start = jdatetime.date(1400, 3, 27)                                   # Jalali Start Date
+#JalaliDate_Stop = jdatetime.date(1401, 3, 31)                                    # Jalali Stop Date
+JalaliDate_Stop = Today
 
 GregorianDate_start = jdatetime.date.togregorian(JalaliDate_Start)              # Convert Start Date to Gregorian 
 GregorianDate_stop = jdatetime.date.togregorian(JalaliDate_Stop)                # Convert Start Date to Gregorian Stop Date

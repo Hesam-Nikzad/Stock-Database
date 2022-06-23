@@ -55,8 +55,7 @@ def Find_Price_And_Date(date_int, StockPrice):
     return output
 
 
-# The first date which we have candle data about it is 1380/01/05
-# The first date which we have Real-Legal data about it is 1393/01/05
+# The first date which we have candle data about it is 1387/01/05
 JalaliDate_Start = jdatetime.date(1387, 1, 1)                                   # Jalali Start Date
 JalaliDate_Stop = jdatetime.date(1401, 3, 27)                                   # Jalali Stop Date
 
@@ -93,7 +92,7 @@ for Industry in Industries:
             
         JalaliDate_int = Date_obj2int(JalaliDate)                           # convert Jalali date as an object to an integer
         GregorianDate_int = Date_obj2int(GregorianDate)                     # convert Gregorian date as an object to an integer
-        Price = Find_Price_And_Date(GregorianDate_int, Price_Data)          # adjusted price data of a specific date
+        Price = Find_Price_And_Date(GregorianDate_int, Price_Data)          # price data of a specific date
 
         if Price == None:                                                   # if there isn't any data of that date skip it 
             GregorianDate += OneDayDelta
