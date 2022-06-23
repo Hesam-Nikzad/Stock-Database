@@ -34,7 +34,7 @@ def Start_Date_Finder(Stock):
 
     Start_Date = max(GregorianDate_start, Released_Date)
 
-    cursor.execute('SELECT max(Gregorian_Date) FROM raw_data WHERE EnglishSymbol = \'%s\';' %Stock)
+    cursor.execute('SELECT max(Gregorian_Date) FROM index_raw_data WHERE AddressName = \'%s\';' %Stock)
     result = cursor.fetchall()
     
     if result[0][0] != None:
@@ -57,7 +57,7 @@ def Find_Price_And_Date(date_int, StockPrice):
 
 # The first date which we have candle data about it is 1387/01/05
 JalaliDate_Start = jdatetime.date(1387, 1, 1)                                   # Jalali Start Date
-JalaliDate_Stop = jdatetime.date(1401, 3, 27)                                   # Jalali Stop Date
+JalaliDate_Stop = jdatetime.date.today()                                  # Jalali Stop Date
 
 GregorianDate_start = jdatetime.date.togregorian(JalaliDate_Start)              # Convert Start Date to Gregorian 
 GregorianDate_stop = jdatetime.date.togregorian(JalaliDate_Stop)                # Convert Start Date to Gregorian Stop Date

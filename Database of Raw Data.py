@@ -144,7 +144,7 @@ def Stock_Data():
             Stock_Date_Info.extend(Real_Legal_Volume_Number)                            # Closing price in Tehran Stocks is something average of dealed price of each day
             
             format_strings = ','.join(['%s'] * len(Stock_Date_Info))
-            cursor.execute('INSERT INTO stoc_raw_data VALUES (%s)' % format_strings, tuple(Stock_Date_Info))
+            cursor.execute('INSERT INTO stock_raw_data VALUES (%s)' % format_strings, tuple(Stock_Date_Info))
             cnx.commit()
 
             GregorianDate += OneDayDelta
@@ -154,8 +154,8 @@ def Stock_Data():
 # The first date which we have Real-Legal data about it is 1393/01/05
 Today = jdatetime.date.today()
 JalaliDate_Start = jdatetime.date(1400, 3, 27)                                   # Jalali Start Date
-#JalaliDate_Stop = jdatetime.date(1401, 3, 31)                                    # Jalali Stop Date
-JalaliDate_Stop = Today
+JalaliDate_Stop = Today                                                          # Jalali Stop Date
+
 
 GregorianDate_start = jdatetime.date.togregorian(JalaliDate_Start)              # Convert Start Date to Gregorian 
 GregorianDate_stop = jdatetime.date.togregorian(JalaliDate_Stop)                # Convert Start Date to Gregorian Stop Date
