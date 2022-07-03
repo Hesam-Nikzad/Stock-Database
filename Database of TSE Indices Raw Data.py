@@ -81,7 +81,7 @@ for Industry in Industries:
     GregorianDate = Start_Date_Finder(AddressName)
     print(AddressName, GregorianDate)
     
-    while GregorianDate <= GregorianDate_stop:
+    while GregorianDate < GregorianDate_stop:
 
         Industry_Date_Info = []
 

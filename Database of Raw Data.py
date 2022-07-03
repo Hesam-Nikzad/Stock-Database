@@ -119,7 +119,7 @@ def Stock_Data():
         GregorianDate = Start_Date_Finder(EnglishSymbol, Adj_Price_Data)
         print(EnglishSymbol, GregorianDate)
 
-        while GregorianDate <= GregorianDate_stop:
+        while GregorianDate < GregorianDate_stop:
             
             Stock_Date_Info = []
 
