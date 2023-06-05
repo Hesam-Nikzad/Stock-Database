@@ -13,6 +13,7 @@ class Feature:
         self.engine = create_engine('mysql+pymysql://root:harchi@127.0.0.1:3306/market')
         self.dfTicker = pd.read_sql('SELECT * FROM ticker_data', self.cnx)
         self.dfIndex = pd.read_sql('SELECT * FROM index_data', self.cnx)
+        self.path = 'C:/Users/Hessum/OneDrive/Bourse/Stock Market Python/Financial Market Projects/Stock-Database/'
 
     def Main_Index(self):
         mainIndex = self.dfIndex.loc[self.dfIndex.index_name=='شاخص كل']
@@ -21,26 +22,44 @@ class Feature:
         mainIndex.sort_values(by='date', inplace=True)
         mainIndex.rename(columns={'price': 'close'}, inplace=True)
 
-        # to pandas ta
+        # to pandas_ta
         mainIndex = pta.utils.DataFrame(mainIndex)
         
         # EMA 21 55 233
         mainIndex.ta.ema(length=21, append=True)
         mainIndex.ta.ema(length=55, append=True)
         mainIndex.ta.ema(length=233, append=True)
+
+        mainIndex['EMA21_Close'] = mainIndex['EMA_21']/mainIndex['close']
+        mainIndex['EMA55_Close'] = mainIndex['EMA_55']/mainIndex['close']
+        mainIndex['EMA233_Close'] = mainIndex['EMA_233']/mainIndex['close']
+
+        mainIndex['EMA21_EMA55'] = mainIndex['EMA_21']/mainIndex['EMA_55']
+        mainIndex['EMA21_EMA233'] = mainIndex['EMA_21']/mainIndex['EMA_233']
+        mainIndex['EMA21_EMA233'] = mainIndex['EMA_55']/mainIndex['EMA_233']
+
+        mainIndex.drop(columns=['EMA_21', 'EMA_55', 'EMA_233'], inplace=True)
+
         
         # RSI MACD
         mainIndex.ta.rsi(append=True)
         mainIndex.ta.macd(append=True)
-        
-        # MAX til 5 days ago
-        mainIndex['max_close_5d'] = mainIndex['close'].shift(5).expanding().max()
-        mainIndex['close2max_ratio'] = mainIndex['close']/mainIndex['max_close_5d']
 
-        # PP
+        mainIndex['MACD_Close'] = mainIndex['MACD_12_26_9']/mainIndex['close']
+        mainIndex['MACDh_Close'] = mainIndex['MACDh_12_26_9']/mainIndex['close']
+        mainIndex['MACDs_Close'] = mainIndex['MACDs_12_26_9']/mainIndex['close']
+
+        mainIndex.drop(columns=['MACD_12_26_9', 'MACDh_12_26_9', 'MACDs_12_26_9'], inplace=True)
+        
+        # MAX close til 5 days ago
+        mainIndex['max_close_5d'] = mainIndex['close'].shift(5).expanding().max()
+        mainIndex['close_max'] = mainIndex['close']/mainIndex['max_close_5d']
+
+        mainIndex.drop(columns=['max_close_5d'], inplace=True)
+
+        # PP strategy
         pp_year = mainIndex[['date', 'close']]
         pp_year['year'] = pp_year['date'].dt.year
-        #pp_year = pp_year.groupby(pp_year.year).close.apply(lambda x: x.ta.pivot(high=None, low=None, close=x, inplace=False))
         pp_year = pp_year.groupby('year').agg({'close': ['max', 'min', 'last']})
         pp_year.columns = ['high', 'low', 'close']
         pp_year = pp_year.shift(1)
@@ -58,9 +77,23 @@ class Feature:
         pp_year['R2'] = pp_year['PP'] + (pp_year['high'] - pp_year['low'])
         pp_year['R3'] = pp_year['high'] + 2 * (pp_year['PP'] - pp_year['low'])
 
-        print(pp_year.tail(12))
-        print(mainIndex.tail(12))
+        pp_year.clip(lower=0, inplace=True)
+        pp_year.drop(columns=['high', 'low', 'close'], inplace=True)
 
+        # Merge mainIndex and PP
+        mainIndex = mainIndex.merge(pp_year, left_on=mainIndex['date'].dt.year, right_on=pp_year.index, how='left')
+        
+        mainIndex['PP_Close'] = mainIndex['PP']/mainIndex['close']
+        mainIndex['R1_Close'] = mainIndex['R1']/mainIndex['close']
+        mainIndex['R2_Close'] = mainIndex['R2']/mainIndex['close']
+        mainIndex['R3_Close'] = mainIndex['R3']/mainIndex['close']
+        mainIndex['S1_Close'] = mainIndex['S1']/mainIndex['close']
+        mainIndex['S2_Close'] = mainIndex['S2']/mainIndex['close']
+        mainIndex['S3_Close'] = mainIndex['S3']/mainIndex['close']
+
+        mainIndex.drop(columns=['PP', 'R1', 'R2', 'R3', 'S1', 'S2', 'S3'], inplace=True)
+
+        # Smart Money
         columns = ['date', 'deal_worth', 'deal_count', 'volume', 'individual_buy_value',
                    'individual_buy_count', 'corporate_buy_value', 'corporate_buy_count']
         aggCondition = {
@@ -83,6 +116,9 @@ class Feature:
             dfTickerDate = self.dfTicker.loc[self.dfTicker.date == row['date']]
             print(dfTickerDate.deal_worth.sum())"""
 
+
+        # Save on local
+        mainIndex.to_csv(self.path + 'mainIndex.csv')
 
 
 
