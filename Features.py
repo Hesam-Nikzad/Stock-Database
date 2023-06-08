@@ -82,6 +82,7 @@ class Feature:
 
         # Merge mainIndex and PP
         mainIndex = mainIndex.merge(pp_year, left_on=mainIndex['date'].dt.year, right_on=pp_year.index, how='left')
+        mainIndex.drop(columns=['key_0'], inplace=True)
         
         mainIndex['PP_Close'] = mainIndex['PP']/mainIndex['close']
         mainIndex['R1_Close'] = mainIndex['R1']/mainIndex['close']
@@ -94,29 +95,52 @@ class Feature:
         mainIndex.drop(columns=['PP', 'R1', 'R2', 'R3', 'S1', 'S2', 'S3'], inplace=True)
 
         # Smart Money
-        columns = ['date', 'deal_worth', 'deal_count', 'volume', 'individual_buy_value',
-                   'individual_buy_count', 'corporate_buy_value', 'corporate_buy_count']
+        cols = ['date', 'deal_worth', 'deal_count', 'volume', 'individual_buy_value', 'individual_buy_count', 
+                   'individual_sell_value', 'individual_sell_count', 'corporate_buy_value', 'corporate_buy_count',
+                   'corporate_sell_value', 'corporate_sell_count']
         aggCondition = {
             'deal_worth': 'sum', 
             'deal_count': 'sum', 
             'volume': 'sum',
             'individual_buy_value': 'sum',
             'individual_buy_count': 'sum',
+            'individual_sell_value': 'sum',
+            'individual_sell_count': 'sum',
             'corporate_buy_value': 'sum',
-            'corporate_buy_count': 'sum'
+            'corporate_buy_count': 'sum',
+            'corporate_sell_value': 'sum',
+            'corporate_sell_count': 'sum'
         }
-        mainInfo = self.dfTicker[columns]
+        mainInfo = self.dfTicker[cols]
         mainInfo.sort_values(by='date', inplace=True)
         mainInfo = mainInfo.groupby('date').agg(aggCondition)
+
+        # individual and corporate buyer power
+        mainInfo['individial_buyer_power'] = (mainInfo['individual_buy_value']/mainInfo['individual_buy_count'])/(mainInfo['individual_sell_value']/mainInfo['individual_sell_count'])
+        mainInfo['corporate_buyer_power'] = (mainInfo['corporate_buy_value']/mainInfo['corporate_buy_count'])/(mainInfo['corporate_sell_value']/mainInfo['corporate_sell_count'])
+
+        # individual and corporate money income
+        mainInfo['individual_money_in'] = mainInfo['individual_buy_value'] - mainInfo['individual_sell_value']
+        mainInfo['individual_money_21'] = mainInfo['individual_money_in']/mainInfo['individual_money_in'].rolling(window=21).mean()
+        mainInfo['individual_money_55'] = mainInfo['individual_money_in']/mainInfo['individual_money_in'].rolling(window=55).mean()
+        mainInfo['individual_money_233'] = mainInfo['individual_money_in']/mainInfo['individual_money_in'].rolling(window=233).mean()
+
+        # average volume
+        mainInfo['mean_volume_21'] = mainInfo['volume']/mainInfo['volume'].rolling(window=21).mean()
+        mainInfo['mean_volume_55'] = mainInfo['volume']/mainInfo['volume'].rolling(window=55).mean()
+        mainInfo['mean_volume_233'] = mainInfo['volume']/mainInfo['volume'].rolling(window=233).mean()
         
+        # average deal worth
+        mainInfo['mean_worth_21'] = mainInfo['deal_worth']/mainInfo['deal_worth'].rolling(window=21).mean()
+        mainInfo['mean_worth_55'] = mainInfo['deal_worth']/mainInfo['deal_worth'].rolling(window=55).mean()
+        mainInfo['mean_worth_233'] = mainInfo['deal_worth']/mainInfo['deal_worth'].rolling(window=233).mean()
+        
+
         print(mainInfo)
-        
-        """for index, row in mainIndex.iterrows():
-            print(row['date'])
-            dfTickerDate = self.dfTicker.loc[self.dfTicker.date == row['date']]
-            print(dfTickerDate.deal_worth.sum())"""
-
-
+        # Clean mainInfo and merge it to mainIndex
+        cols.remove('date')
+        mainInfo.drop(columns=cols, inplace=True)
+        mainIndex = mainIndex.set_index('date').join(mainInfo)
         # Save on local
         mainIndex.to_csv(self.path + 'mainIndex.csv')
 
